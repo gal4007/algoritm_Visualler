@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Визуализатор алгоритмов | Сортировки и поиск</title>
+  <meta name="description" content="Интерактивная визуализация алгоритмов сортировки и поиска с пошаговым выполнением, синхронным кодом на C++, звуковым сопровождением и тёмной темой.">
+  <meta property="og:title" content="Визуализатор алгоритмов | Сортировки и поиск">
+  <meta property="og:description" content="Интерактивная визуализация алгоритмов сортировки и поиска с пошаговым выполнением, синхронным кодом на C++, звуковым сопровождением и тёмной темой.">
+  <meta property="og:type" content="website">
+
+  <!-- Внешний файл стилей -->
+  <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+
+  <main class="app-container">
+
+    <!-- 1. Шапка приложения с выбором алгоритма -->
+    <header class="header">
+      <div class="header-top">
+        <div class="title-group">
+          <div class="logo-badge" aria-hidden="true">📊</div>
+          <div>
+            <h1 class="app-title">Визуализатор алгоритмов</h1>
+            <p class="subtitle" id="algoSubtitle">Сортировка пузырьком (Bubble Sort)</p>
+          </div>
+        </div>
+        <div class="header-controls">
+          <button id="btnSoundToggle" class="btn-sound-toggle" aria-label="Включить или выключить звук" title="Включить или выключить звук (Клавиша M)">
+            <span id="soundIcon" aria-hidden="true">🔊</span>
+            <span id="soundText">Звук</span>
+          </button>
+          <div class="algo-select-wrapper">
+            <label for="algoSelect" class="sr-only" style="position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); border: 0;">Выберите алгоритм</label>
+            <select id="algoSelect" class="algo-select" aria-label="Выбор алгоритма">
+              <optgroup label="Сортировки">
+                <option value="bubble">Сортировка пузырьком</option>
+                <option value="selection">Сортировка выбором (Selection Sort)</option>
+                <option value="insertion">Сортировка вставками (Insertion Sort)</option>
+                <option value="shell">Сортировка Шелла (Shell Sort)</option>
+                <option value="quick">Быстрая сортировка (Quick Sort)</option>
+              </optgroup>
+              <optgroup label="Поиск">
+                <option value="linear">Линейный поиск (Linear Search)</option>
+                <option value="binary">Бинарный поиск (Binary Search)</option>
+                <option value="jump">Прыжковый поиск (Jump Search)</option>
+                <option value="interpolation">Интерполяционный поиск (Interpolation Search)</option>
+              </optgroup>
+            </select>
+            <span class="algo-select-arrow" aria-hidden="true">▼</span>
+          </div>
+          <span class="app-badge" id="appBadge">
+            <span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:#3b82f6;"></span>
+            20 чисел
+          </span>
+        </div>
+      </div>
+    </header>
+
+    <!-- 2. Легенда цветовых состояний -->
+    <section class="legend-bar" aria-label="Легенда цветов состояний">
+      <div class="legend-item">
+        <span class="legend-color legend-default"></span>
+        <span>Серый: Обычный</span>
+      </div>
+      <div class="legend-item" id="legendPivotItem">
+        <span class="legend-color legend-pivot"></span>
+        <span id="legendPivotText">Пурпурный: Границы (left / right / mid)</span>
+      </div>
+      <div class="legend-item">
+        <span class="legend-color legend-compare"></span>
+        <span id="legendCompareText">Жёлтый: Проверяемый / Сравнение</span>
+      </div>
+      <div class="legend-item">
+        <span class="legend-color legend-swap"></span>
+        <span id="legendSwapText">Красный: Обмен / Не найдено</span>
+      </div>
+      <div class="legend-item">
+        <span class="legend-color legend-sorted"></span>
+        <span id="legendSortedText">Зелёный: Найден / Отсортирован</span>
+      </div>
+      <div class="legend-item" id="legendDimmedItem">
+        <span class="legend-color legend-dimmed"></span>
+        <span>Затемнённый: Вне диапазона</span>
+      </div>
+    </section>
+
+    <!-- Двухколоночный макет: Визуализация слева, Псевдокод на C++ сбоку -->
+    <div class="main-content-layout">
+
+      <!-- Левая колонка: Визуализатор, Статус, Счётчики, Управление -->
+      <div class="visualizer-column">
+        <!-- Панель настройки поиска (отображается только для алгоритмов поиска) -->
+        <section class="search-bar-card" id="searchControlsRow" style="display: none;" aria-label="Параметры поиска">
+          <div class="search-input-group">
+            <label for="targetInput" class="search-label">
+              <span aria-hidden="true">🎯</span>
+              <span>Искомое число:</span>
+            </label>
+            <input
+              type="number"
+              id="targetInput"
+              class="search-input"
+              min="1"
+              max="150"
+              value="42"
+              aria-label="Искомое число для алгоритма поиска"
+            />
+          </div>
+          <div class="search-actions">
+            <button id="btnPickRandom" class="btn-pick-random" aria-label="Выбрать случайное число из текущего массива" title="Выбрать число, которое точно присутствует в массиве">
+              <span aria-hidden="true">🎲</span>
+              <span>Случайное из массива</span>
+            </button>
+            <button id="btnPickMissing" class="btn-pick-missing" aria-label="Задать число не из массива" title="Задать число, которого нет в массиве (проверка случая 'Не найдено')">
+              <span aria-hidden="true">🚫</span>
+              <span>Число не из массива</span>
+            </button>
+          </div>
+        </section>
+
+        <!-- 3. Область визуализации столбиков -->
+        <section class="visualizer-card">
+          <div class="chart-container" id="chartContainer" role="region" aria-label="Столбчатая диаграмма массива чисел">
+            <div class="chart-grid-line grid-25"></div>
+            <div class="chart-grid-line grid-50"></div>
+            <div class="chart-grid-line grid-75"></div>
+          </div>
+
+          <!-- Текстовое описание текущего действия под столбиками -->
+          <div class="status-panel" aria-live="polite">
+            <div class="status-badge-row">
+              <span class="status-tag tag-idle" id="statusTag">Готов к запуску</span>
+              <span class="status-step-count" id="stepCounterLabel">Шаг: 0</span>
+            </div>
+            <div class="status-message" id="statusMessage">
+              Нажмите «Старт» для автоматического воспроизведения или «Шаг» для пошагового разбора.
+            </div>
+          </div>
+        </section>
+
+        <!-- 4. Счётчики сравнений, обменов и прогресса -->
+        <section class="counters-grid" aria-label="Счётчики операций">
+          <div class="counter-card" id="counterCompareCard">
+            <span class="counter-label">Сравнения</span>
+            <span class="counter-value val-compare" id="comparisonsCount">0</span>
+          </div>
+          <div class="counter-card" id="counterSwapsCard">
+            <span class="counter-label">Обмены</span>
+            <span class="counter-value val-swap" id="swapsCount">0</span>
+          </div>
+          <div class="counter-card" id="counterPassCard">
+            <span class="counter-label">Проход по массиву</span>
+            <span class="counter-value val-pass" id="currentPassCount">0 / 20</span>
+          </div>
+          <div class="counter-card" id="counterResultCard">
+            <span class="counter-label">Отсортировано</span>
+            <span class="counter-value val-sorted" id="sortedCount">0 / 20</span>
+          </div>
+        </section>
+
+        <!-- 5. Панель управления -->
+        <section class="controls-card" aria-label="Панель управления алгоритмом">
+          <div class="buttons-row">
+            <button id="btnPlayPause" class="btn-play" aria-label="Запустить или приостановить сортировку">
+              <span id="playIcon">▶</span>
+              <span id="playText">Старт</span>
+            </button>
+            <button id="btnStep" class="btn-secondary" aria-label="Выполнить один шаг сортировки">
+              <span>⏭</span>
+              <span>Шаг</span>
+            </button>
+            <button id="btnReset" class="btn-secondary" aria-label="Сбросить массив к исходному состоянию">
+              <span>↺</span>
+              <span>Сброс</span>
+            </button>
+            <button id="btnNewArray" class="btn-accent" aria-label="Сгенерировать 20 новых случайных чисел">
+              <span>🎲</span>
+              <span>Новый массив</span>
+            </button>
+          </div>
+
+          <!-- Ползунок скорости -->
+          <div class="speed-control-container">
+            <div class="speed-header">
+              <label for="speedSlider" class="speed-label">
+                <span>⚡ Скорость шага:</span>
+              </label>
+              <span class="speed-val-display" id="speedDisplay">120 мс</span>
+            </div>
+            <div class="slider-wrapper">
+              <span class="slider-hint">Быстро</span>
+              <input
+                type="range"
+                id="speedSlider"
+                min="20"
+                max="600"
+                step="10"
+                value="120"
+                aria-label="Регулировка задержки между шагами в миллисекундах"
+              >
+              <span class="slider-hint">Медленно</span>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <!-- Правая колонка: Псевдокод на C++ сбоку с подсветкой текущей строки -->
+      <aside class="code-card" aria-label="Псевдокод алгоритма на C++">
+        <div class="code-card-header">
+          <div class="code-title-group">
+            <span class="code-icon" aria-hidden="true">💻</span>
+            <div>
+              <h2 class="code-card-title">Код на C++</h2>
+              <p class="code-card-subtitle" id="codeCardSubtitle">Пузырьковая сортировка</p>
+            </div>
+          </div>
+          <div class="code-badge-group">
+            <span class="code-lang-badge">C++20</span>
+            <span class="code-active-line-badge" id="activeLineBadge">Строка: —</span>
+          </div>
+        </div>
+
+        <div class="code-scroll-area">
+          <pre class="code-pre"><code id="codeBlock"></code></pre>
+        </div>
+
+        <div class="code-footer">
+          💡 Строка кода C++ подсвечивается синхронно с действиями над столбиками.
+        </div>
+      </aside>
+
+    </div>
+
+    <!-- 6. Описание принципа работы алгоритма -->
+    <section class="info-card">
+      <h2 class="info-title">
+        <span>💡</span>
+        <span id="infoTitle">Принцип работы пузырьковой сортировки</span>
+      </h2>
+      <p class="info-text" id="infoText">
+        Алгоритм последовательно проходит по массиву, попарно сравнивает соседние элементы и меняет их местами, если левый больше правого. После каждого полного прохода наибольший элемент «всплывает» в конец, как пузырёк воздуха в воде.
+      </p>
+      <div class="complexity-badges">
+        <div class="complexity-badge">Время (худшее): <strong id="timeWorst">O(n²)</strong></div>
+        <div class="complexity-badge">Время (среднее / лучшее): <strong id="timeAvg">O(n²) / O(n)</strong></div>
+        <div class="complexity-badge">Память: <strong id="spaceComplexity">O(1)</strong></div>
+        <div class="complexity-badge">Горячие клавиши: <strong>Пробел (Старт/Пауза), Стрелка вправо (Шаг), M (Звук), R (Сброс), N (Новый)</strong></div>
+      </div>
+    </section>
+
+    <footer class="footer">
+      Визуализатор алгоритмов •  • Тёмная тема
+    </footer>
+
+  </main>
+
+  <!-- Внешний файл логики -->
+  <script type="module" src="./script.js"></script>
+</body>
+</html>
